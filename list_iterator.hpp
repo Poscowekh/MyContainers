@@ -4,19 +4,29 @@
 #include "Node.hpp"
 
 /// Basic Iterator for List using Node*
-template<typename value, typename iterator_category = std::random_access_iterator_tag>
-class ListIterator : public std::iterator<iterator_category, value, std::size_t>{
+template<typename value, typename category = std::random_access_iterator_tag>
+class ListIterator : public std::iterator<category, value, std::size_t> {
+public:
+    typedef value value_type;
+    typedef value& reference;
+    typedef const value& const_reference;
+    typedef value* pointer;
+    typedef std::random_access_iterator_tag iterator_category;
+    typedef std::size_t difference_type;
+
 private:
-    using reference = value&;
-    using const_reference = const value&;
     using node = Node<value>*;
     using const_node = const Node<value>*;
-    using distance_t = std::size_t;
+    enum Direction {
+        Right,
+        Left,
+        None
+    };
 
     node _node;
 
-    distance_t _distance_to_non_end(const ListIterator& other) const {
-        distance_t result = 0;
+    std::pair<difference_type, Direction> _distance_to_non_end(const ListIterator& other) const {
+        difference_type result = 0;
         ListIterator left = other, right = other;
 
         while(left._node != _node && right._node != _node) {
@@ -27,10 +37,13 @@ private:
             ++result;
         };
 
-        return result;
+        if(left._node == _node)
+            return std::make_pair(result, Direction::Left);
+        else
+            return std::make_pair(result, Direction::Right);
     };
-    distance_t _distance_to_end(const ListIterator& other) const {
-        distance_t result = 0;
+    difference_type _distance_to_end(const ListIterator& other) const {
+        difference_type result = 0;
         ListIterator copy = other;
 
         while(copy._node != 0) {
@@ -39,6 +52,18 @@ private:
         };
 
         return result;
+    };
+
+    std::pair<difference_type, Direction> distance_direction(const ListIterator& other) const {
+        if((_node == 0 && other._node == 0) || _node == other._node)
+            return std::make_pair(0, Direction::None);
+        if(other._node == 0 && _node != 0) {
+            auto tmp =  other.distance_direction(*this);
+            tmp.second = Direction::Right;
+            return tmp;
+        } if(_node != 0)
+            return _distance_to_non_end(other);
+        return std::make_pair(_distance_to_end(other), Direction::Right);
     };
 
 public:
@@ -61,7 +86,7 @@ public:
         return *this;
     };
 
-    const ListIterator& operator++(){
+    ListIterator& operator++(){
         if(_node == 0)
             throw std::runtime_error("\nList iterator exception: incrementing end iterator");
         _node = _node->next;
@@ -75,7 +100,7 @@ public:
         return copy;
     };
 
-    const ListIterator& operator--(){
+    ListIterator& operator--(){
         if(_node == 0)
             throw std::runtime_error("\nList iterator exception: decrementing end iterator");
         _node = _node->prev;
@@ -111,51 +136,78 @@ public:
         return _node != other._node;
     };
 
+    bool operator>(const ListIterator& other) const {
+        if(distance_direction(other).second == Direction::Right)
+            return true;
+        return false;
+    };
+    bool operator>=(const ListIterator& other) const {
+        auto direction = distance_direction(other).second;
+        if(direction == Direction::Right || direction == Direction::None)
+            return true;
+        return false;
+    };
+
+    bool operator<(const ListIterator& other) const {
+        if(distance_direction(other).second == Direction::Left)
+            return true;
+        return false;
+    };
+    bool operator<=(const ListIterator& other) const {
+        auto direction = distance_direction(other).second;
+        if(direction == Direction::Left || direction == Direction::None)
+            return true;
+        return false;
+    };
+
     /// unsafe
-    ListIterator operator+(const distance_t& distance) const{
+    ListIterator operator+(const difference_type& distance) const{
         ListIterator result = copy();
         result += distance;
         return result;
     };
     /// unsafe
-    ListIterator operator-(const distance_t& distance) const{
+    ListIterator operator-(const difference_type& distance) const{
          ListIterator result = copy();
          result -= distance;
          return result;
     };
 
     /// unsafe
-    void operator+=(const distance_t& distance){
+    void operator+=(const difference_type& distance){
         for(auto i = 0; i < distance; ++i, ++(*this));
     };
     /// unsafe
-    void operator-=(const distance_t& distance){
+    void operator-=(const difference_type& distance){
         for(auto i = 0; i < distance; ++i, --(*this));
     };
 
-    distance_t operator-(const ListIterator& other) const{
-        if(_node == 0 && other._node == 0)
+    difference_type operator-(const ListIterator& other) const{
+        if((_node == 0 && other._node == 0) || _node == other._node)
             return 0;
         if(other._node == 0 && _node != 0)
             return other - *this;
         if(_node != 0)
-            return _distance_to_non_end(other);
+            return _distance_to_non_end(other).first;
         return _distance_to_end(other);
     };
 };
 
 /// Basic const Iterator for List using Node*
-template<typename value, typename iterator_category = std::random_access_iterator_tag>
-class ConstListIterator : public std::iterator<iterator_category, value, std::size_t> {
+template<typename value, typename category = std::random_access_iterator_tag>
+class ConstListIterator : public std::iterator<category, value, std::size_t> {
+public:
+    typedef value value_type;
+    typedef value& reference;
+    typedef const value& const_reference;
+    typedef value* pointer;
+    typedef std::random_access_iterator_tag iterator_category;
+    typedef std::size_t difference_type;
+
 private:
-    using reference = value&;
-    /// read-only reference to value in the node pointed at
-    using const_reference = const value&;
     using node = Node<value>*;
     using const_node = const Node<value>*;
-    /// positive distance between two iterators aka std::size_t
-    using distance_t = std::size_t;
-    using _iterator = ListIterator<value, iterator_category>;
+    using _iterator = ListIterator<value, category>;
 
     _iterator _iter;
 
@@ -213,29 +265,43 @@ public:
         return _iter != other._iter;
     };
 
+    bool operator>(const ConstListIterator& other) const {
+        return _iter > other._iter;
+    };
+    bool operator>=(const ConstListIterator& other) const {
+        return _iter >= other._iter;
+    };
+
+    bool operator<(const ConstListIterator& other) const {
+        return _iter < other._iter;
+    };
+    bool operator<=(const ConstListIterator& other) const {
+        return _iter <= other._iter;
+    };
+
     /// unsafe
-    ConstListIterator operator+(const distance_t& distance) const{
+    ConstListIterator operator+(const difference_type& distance) const{
         ConstListIterator result = copy();
         result += distance;
         return result;
     };
     /// unsafe
-    ConstListIterator operator-(const distance_t& distance) const{
+    ConstListIterator operator-(const difference_type& distance) const{
          ConstListIterator result = copy();
          result -= distance;
          return result;
     };
 
     /// unsafe
-    void operator+=(const distance_t& distance){
+    void operator+=(const difference_type& distance){
         _iter += distance;
     };
     /// unsafe
-    void operator-=(const distance_t& distance){
+    void operator-=(const difference_type& distance){
         _iter -= distance;
     };
 
-    distance_t operator-(const ConstListIterator& other) const{
+    difference_type operator-(const ConstListIterator& other) const{
         return _iter - other._iter;
     };
 };

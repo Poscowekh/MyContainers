@@ -1,6 +1,7 @@
 #ifndef LINKEDLIST_H
 #define LINKEDLIST_H
 #include <iostream>
+#include <algorithm>
 #include "list_iterator.hpp"
 
 /// Double-linked list implementation
@@ -621,7 +622,9 @@ public:
         return result;
     };
 
-    /*friend std::istream& operator>>(std::istream& in, List& list){
+    /*
+    abandoned due to complications in use
+    friend std::istream& operator>>(std::istream& in, List& list){
         list = List();
         int size = 0;
         in >> size;
@@ -681,6 +684,11 @@ public:
     };
     const_iterator cend() const{
         return const_iterator(_tail->next);
+    };
+
+    /// sort using std::sort
+    void sort() {
+        std::sort(begin(), end());
     };
 
     ~List(){

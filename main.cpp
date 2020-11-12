@@ -17,8 +17,12 @@ int main() {
     for(auto element : array)
         cout << element << ' ';
 
-    cout << ")\nresult: ";
+    cout << ")\nResult: ";
     // List can use some standart range operations
     for(auto element : result)
         cout << element << ' ';
+
+    // Iterators provide use with std::sort and others
+    std::sort(result.begin(), result.end());
+    cout << endl << "Sorted list: " << result << endl;
 };

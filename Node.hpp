@@ -4,19 +4,26 @@
 /// Basic node for data structures
 template<typename value>
 struct Node {
-    /// using pointer may be a useless idea
+    /// the pointer may be replaced by value
     value* data;
+
     Node* prev;
     Node* next;
 
-    Node() : data(new value()), prev(0), next(0) {};
+    Node()
+        : data(new value()), prev(0), next(0) {};
+
     Node(const value* _data, Node* _prev, Node* _next)
         : data(new value(*_data)), prev(_prev), next(_next) {};
+
     Node(const value& _data, Node* _prev, Node* _next)
         : Node(&_data, _prev, _next) {};
+
     Node(const Node* other)
         : data(new value(*other->data)), prev(0), next(0) {};
+
     Node(const Node& other) : Node(&other) {};
+
     Node(Node&& other) : Node() {
         using namespace std;
 
